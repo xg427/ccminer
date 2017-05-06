@@ -1025,6 +1025,7 @@ void api_set_throughput(int thr_id, uint32_t throughput)
 	if (thr_id < MAX_GPUS && thr_info) {
 		struct cgpu_info *cgpu = &thr_info[thr_id].gpu;
 		cgpu->intensity = throughput2intensity(throughput);
+		if (cgpu->throughput != throughput) cgpu->throughput = throughput;
 	}
 	// to display in bench results
 	if (opt_benchmark)

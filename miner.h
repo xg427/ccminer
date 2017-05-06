@@ -282,6 +282,7 @@ extern int scanhash_cryptolight(int thr_id, struct work* work, uint32_t max_nonc
 extern int scanhash_cryptonight(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done);
 extern int scanhash_decred(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done);
 extern int scanhash_deep(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done);
+extern int scanhash_equihash(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done);
 extern int scanhash_keccak256(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done);
 extern int scanhash_fresh(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done);
 extern int scanhash_fugue256(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done);
@@ -340,6 +341,7 @@ extern void free_cryptolight(int thr_id);
 extern void free_cryptonight(int thr_id);
 extern void free_decred(int thr_id);
 extern void free_deep(int thr_id);
+extern void free_equihash(int thr_id);
 extern void free_keccak256(int thr_id);
 extern void free_fresh(int thr_id);
 extern void free_fugue256(int thr_id);
@@ -679,6 +681,7 @@ struct stratum_ctx {
 	time_t tm_connected;
 
 	int rpc2;
+	int is_equihash;
 	int srvtime_diff;
 };
 
@@ -722,6 +725,8 @@ struct work {
 	/* pok getwork txs */
 	uint32_t tx_count;
 	struct tx txs[POK_MAX_TXS];
+	// zec solution
+	uint8_t extra[1388];
 };
 
 #define POK_BOOL_MASK 0x00008000
@@ -803,6 +808,13 @@ bool stratum_handle_method(struct stratum_ctx *sctx, const char *s);
 void stratum_free_job(struct stratum_ctx *sctx);
 
 bool rpc2_stratum_authorize(struct stratum_ctx *sctx, const char *user, const char *pass);
+
+bool equi_stratum_submit(struct pool_infos *pool, struct work *work);
+bool stratum_set_target_equi(struct stratum_ctx *sctx, json_t *params);
+void work_set_target_equi(struct work* work, double diff);
+void equi_store_work_solution(struct work* work, uint32_t* hash, void* sol_data);
+int equi_verify_sol(void * const hdr, void * const sol);
+double equi_network_diff(struct work *work);
 
 void hashlog_remember_submit(struct work* work, uint32_t nonce);
 void hashlog_remember_scan_range(struct work* work);
