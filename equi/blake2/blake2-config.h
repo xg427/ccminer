@@ -65,7 +65,16 @@
 #endif
 
 #if !defined(HAVE_SSE2)
-#error "This code requires at least SSE2."
+
+#ifdef _MSC_VER
+// enforce required stuff for now
+#define HAVE_SSE2
+//#define HAVE_SSSE3
+#define HAVE_SSE41
+#else
+# error "This code requires at least SSE 4.1"
+#endif
+
 #endif
 
 #endif
