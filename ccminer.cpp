@@ -44,6 +44,7 @@
 #include "algos.h"
 #include "sia/sia-rpc.h"
 #include "crypto/xmr-rpc.h"
+#include "equi/equihash.h"
 
 #include <cuda_runtime.h>
 
@@ -842,11 +843,11 @@ static bool submit_upstream_work(CURL *curl, struct work *work)
 	if (pool->type & POOL_STRATUM && stratum.is_equihash) {
 		struct work submit_work;
 		memcpy(&submit_work, work, sizeof(struct work));
-		if (!hashlog_already_submittted(submit_work.job_id, submit_work.nonces[idnonce])) {
+		//if (!hashlog_already_submittted(submit_work.job_id, submit_work.nonces[idnonce])) {
 			if (equi_stratum_submit(pool, &submit_work))
 				hashlog_remember_submit(&submit_work, submit_work.nonces[idnonce]);
 			stratum.job.shares_count++;
-		}
+		//}
 		return true;
 	}
 
@@ -1565,7 +1566,7 @@ static bool stratum_gen_work(struct stratum_ctx *sctx, struct work *work)
 		memcpy(&work->data[9], sctx->job.coinbase, 32+32); // merkle [9..16] + reserved
 		work->data[25] = le32dec(sctx->job.ntime);
 		work->data[26] = le32dec(sctx->job.nbits);
-		memcpy(&work->data[27], sctx->xnonce1, sctx->xnonce1_size); // pool extranonce
+		memcpy(&work->data[27], sctx->xnonce1, sctx->xnonce1_size & 0x1F); // pool extranonce
 		work->data[35] = 0x80;
 		//applog_hex(work->data, 140);
 	} else if (opt_algo == ALGO_LBRY) {
@@ -1835,7 +1836,7 @@ static void *miner_thread(void *userdata)
 			nonceptr = (uint32_t*) (((char*)work.data) + 39);
 			wcmplen = 39;
 		} else if (opt_algo == ALGO_EQUIHASH) {
-			nonceptr = &work.data[30]; // 27 is pool extranonce (256bits nonce space)
+			nonceptr = &work.data[EQNONCE_OFFSET]; // 27 is pool extranonce (256bits nonce space)
 			wcmplen = 4+32+32;
 		}
 
@@ -1970,8 +1971,9 @@ static void *miner_thread(void *userdata)
 			nonceptr[2] |= thr_id;
 
 		} else if (opt_algo == ALGO_EQUIHASH) {
-			nonceptr[-1] = thr_id;  // [29]
-			nonceptr[1]++; // optional [31]
+			nonceptr[1]++; // optional [32]
+			nonceptr[2] = thr_id;   // [33]
+			//applog_hex(&work.data[27], 32);
 		} else if (opt_algo == ALGO_WILDKECCAK) {
 			//nonceptr[1] += 1;
 		} else if (opt_algo == ALGO_SIA) {
@@ -2438,7 +2440,7 @@ static void *miner_thread(void *userdata)
 				work.nonces[1] = nonceptr[2];
 		}
 
-		if (stratum.rpc2 && rc == -EBUSY || work_restart[thr_id].restart) {
+		if (stratum.rpc2 && (rc == -EBUSY || work_restart[thr_id].restart)) {
 			// bbr scratchpad download or stale result
 			sleep(1);
 			if (!thr_id) pools[cur_pooln].wait_time += 1;
@@ -2496,7 +2498,7 @@ static void *miner_thread(void *userdata)
 		}
 
 		// only required to debug purpose
-		if (opt_debug && check_dups && opt_algo != ALGO_DECRED && opt_algo != ALGO_SIA)
+		if (opt_debug && check_dups && opt_algo != ALGO_DECRED && opt_algo != ALGO_EQUIHASH && opt_algo != ALGO_SIA)
 			hashlog_remember_scan_range(&work);
 
 		/* output */

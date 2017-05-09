@@ -46,7 +46,8 @@ extern "C" int equi_verify_sol(void * const hdr, void * const sol)
 
 #include <cuda_helper.h>
 
-#define NONCE_OFT 30 /* 27:34 */
+//#define EQNONCE_OFFSET 30 /* 27:34 */
+#define NONCE_OFT EQNONCE_OFFSET
 
 static bool init[MAX_GPUS] = { 0 };
 static int valid_sols[MAX_GPUS] = { 0 };
@@ -241,7 +242,7 @@ extern "C" int scanhash_equihash(int thr_id, struct work *work, uint32_t max_non
 						pdata[NONCE_OFT] = endiandata[NONCE_OFT] + 1;
 						//applog_hex(vhash, 32);
 						//applog_hex(&work->data[27], 32);
-						goto out; // second solutions not handled yet..
+						goto out; // second solution storage not handled..
 					}
 				}
 				if (work->valid_nonces == MAX_NONCES) goto out;
@@ -266,7 +267,7 @@ out:
 	// H/s
 	*hashes_done = soluce_count;
 
-	pdata[NONCE_OFT] = endiandata[NONCE_OFT];
+	pdata[NONCE_OFT] = endiandata[NONCE_OFT] + 1;
 
 	return work->valid_nonces;
 }

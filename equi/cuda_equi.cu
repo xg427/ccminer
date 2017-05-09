@@ -1892,7 +1892,7 @@ static void sort_pair(uint32_t *a, uint32_t len)
 }
 
 __host__
-void setheader(blake2b_state *ctx, const char *header, const u32 headerLen, const char* nce, const u32 nonceLen)
+static void setheader(blake2b_state *ctx, const char *header, const u32 headerLen, const char* nce, const u32 nonceLen)
 {
 	uint32_t le_N = WN;
 	uint32_t le_K = WK;

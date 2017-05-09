@@ -130,11 +130,11 @@ bool equi_stratum_submit(struct pool_infos *pool, struct work *work)
 	int idnonce = work->submit_nonce_id;
 
 	// scanned nonce
-	work->data[30] = work->nonces[idnonce];
-	size_t nonce_oft = 27 + (stratum.xnonce1_size/4);
+	work->data[EQNONCE_OFFSET] = work->nonces[idnonce];
+	unsigned char * nonce = (unsigned char*) (&work->data[27]);
 	size_t nonce_len = 32 - stratum.xnonce1_size;
 	// long nonce without pool prefix (extranonce)
-	noncestr = bin2hex((unsigned char*) &work->data[nonce_oft], nonce_len);
+	noncestr = bin2hex(&nonce[stratum.xnonce1_size], nonce_len);
 
 	solhex = (char*) calloc(1, 1344*2 + 64);
 	if (!solhex || !noncestr) {

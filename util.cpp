@@ -1179,14 +1179,27 @@ static bool stratum_parse_extranonce(struct stratum_ctx *sctx, json_t *params, i
 	}
 	xn2_size = (int) json_integer_value(json_array_get(params, pndx+1));
 	if (!xn2_size) {
-		applog(LOG_ERR, "Failed to get extranonce2_size");
-		goto out;
+		char algo[64] = { 0 };
+		get_currentalgo(algo, sizeof(algo));
+		if (strcmp(algo, "equihash") == 0) {
+			int xn1_size = (int)strlen(xnonce1) / 2;
+			xn2_size = 32 - xn1_size;
+			if (xn1_size < 4 || xn1_size > 12) {
+				// This miner iterates the nonces at data32[30]
+				applog(LOG_ERR, "Unsupported extranonce size of %d (12 maxi)", xn1_size);
+				goto out;
+			}
+			goto skip_n2;
+		} else {
+			applog(LOG_ERR, "Failed to get extranonce2_size");
+			goto out;
+		}
 	}
 	if (xn2_size < 2 || xn2_size > 16) {
-		applog(LOG_INFO, "Failed to get valid n2size in parse_extranonce");
+		applog(LOG_ERR, "Failed to get valid n2size in parse_extranonce (%d)", xn2_size);
 		goto out;
 	}
-
+skip_n2:
 	pthread_mutex_lock(&stratum_work_lock);
 	if (sctx->xnonce1)
 		free(sctx->xnonce1);
