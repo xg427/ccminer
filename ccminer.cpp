@@ -1971,8 +1971,8 @@ static void *miner_thread(void *userdata)
 			nonceptr[2] |= thr_id;
 
 		} else if (opt_algo == ALGO_EQUIHASH) {
-			nonceptr[1]++; // optional [32]
-			nonceptr[2] = thr_id;   // [33]
+			nonceptr[1]++;
+			nonceptr[1] |= thr_id << 24;
 			//applog_hex(&work.data[27], 32);
 		} else if (opt_algo == ALGO_WILDKECCAK) {
 			//nonceptr[1] += 1;
