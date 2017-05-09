@@ -56,13 +56,14 @@ void diff_to_target_equi(uint32_t *target, double diff)
 /* compute nbits to get the network diff */
 double equi_network_diff(struct work *work)
 {
-	//"bits": "1e 015971",
-	//"target": "00 00015971000000000000000000000000000000000000000000000000000000",
+	//KMD bits: "1e 015971",
+	//KMD target: "00 00 015971000000000000000000000000000000000000000000000000000000",
+	//KMD bits: "1d 686aaf",
+	//KMD target: "00 0000 686aaf0000000000000000000000000000000000000000000000000000",
 	uint32_t nbits = work->data[26];
-
 	uint32_t bits = (nbits & 0xffffff);
-	int16_t shift = (swab32(nbits) & 0xff); // 0x1e = 30
-	shift = shift - 22; // 8 bits shift for KMD
+	int16_t shift = (swab32(nbits) & 0xff);
+	shift = (31 - shift) * 8; // 8 bits shift for 0x1e, 16 for 0x1d
 	uint64_t tgt64 = swab32(bits);
 	tgt64 = tgt64 << shift;
 	// applog_hex(&tgt64, 8);
