@@ -132,15 +132,22 @@ __device__ __forceinline__ uint4 operator^ (uint4 a, uint4 b)
 	return make_uint4(a.x ^ b.x, a.y ^ b.y, a.z ^ b.z, a.w ^ b.w);
 }
 
+// for ROR 63 (or ROL 1); this func only support (32 <= offset < 64)
 __device__ __forceinline__ uint2 ROR2(const uint2 a, const int offset)
 {
 	uint2 result;
+#if __CUDA_ARCH__ > 300
 	{
 		asm("shf.r.wrap.b32 %0, %1, %2, %3;" : "=r"(result.x) : "r"(a.y), "r"(a.x), "r"(offset));
 		asm("shf.r.wrap.b32 %0, %1, %2, %3;" : "=r"(result.y) : "r"(a.x), "r"(a.y), "r"(offset));
 	}
+#else
+	result.y = ((a.x >> (offset - 32)) | (a.y << (64 - offset)));
+	result.x = ((a.y >> (offset - 32)) | (a.x << (64 - offset)));
+#endif
 	return result;
 }
+
 
 __device__ __forceinline__ uint2 SWAPUINT2(uint2 value)
 {
@@ -241,7 +248,7 @@ __device__ __constant__ const u64 blake_iv[] = {
 	0x1f83d9abfb41bd6b, 0x5be0cd19137e2179,
 };
 
-#if CUDART_VERSION < 8000
+#if CUDART_VERSION < 8000 || !defined(__ldca)
 #define __ldca(ptr) *(ptr)
 #endif
 
@@ -1838,6 +1845,8 @@ __global__ void digit_last_wdc(equi<RB, SM>* eq)
 #if __CUDA_ARCH__ >= 300
 		// useful ?
 		soli = __shfl(soli, 0);
+#else
+		__syncthreads();
 #endif
 		if (soli < MAXREALSOLS)
 		{

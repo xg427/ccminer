@@ -109,7 +109,7 @@ static std::vector<unsigned char> GetMinimalFromIndices(std::vector<u32> indices
 	size_t minLen = (cBitLen + 1)*lenIndices / (8 * sizeof(u32));
 	size_t bytePad = sizeof(u32) - ((cBitLen + 1) + 7) / 8;
 	std::vector<unsigned char> array(lenIndices);
-	for (int i = 0; i < indices.size(); i++) {
+	for (size_t i = 0; i < indices.size(); i++) {
 		EhIndexToArray(indices[i], array.data() + (i*sizeof(u32)));
 	}
 	std::vector<unsigned char> ret(minLen);
