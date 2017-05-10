@@ -543,6 +543,14 @@ void get_currentalgo(char* buf, int sz)
 	snprintf(buf, sz, "%s", algo_names[opt_algo]);
 }
 
+void format_hashrate(double hashrate, char *output)
+{
+	if (opt_algo == ALGO_EQUIHASH)
+		format_hashrate_unit(hashrate, output, "Sol/s");
+	else
+		format_hashrate_unit(hashrate, output, "H/s");
+}
+
 /**
  * Exit app
  */
