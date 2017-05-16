@@ -810,9 +810,10 @@ void stratum_free_job(struct stratum_ctx *sctx);
 
 bool rpc2_stratum_authorize(struct stratum_ctx *sctx, const char *user, const char *pass);
 
+bool equi_stratum_notify(struct stratum_ctx *sctx, json_t *params);
+bool equi_stratum_set_target(struct stratum_ctx *sctx, json_t *params);
 bool equi_stratum_submit(struct pool_infos *pool, struct work *work);
-bool stratum_set_target_equi(struct stratum_ctx *sctx, json_t *params);
-void work_set_target_equi(struct work* work, double diff);
+void equi_work_set_target(struct work* work, double diff);
 void equi_store_work_solution(struct work* work, uint32_t* hash, void* sol_data);
 int equi_verify_sol(void * const hdr, void * const sol);
 double equi_network_diff(struct work *work);
