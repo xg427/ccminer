@@ -673,12 +673,11 @@ static int websocket_handshake(SOCKETTYPE c, char *result, char *clientkey)
 static void setup_groups()
 {
 	const char *api_groups = opt_api_groups ? opt_api_groups : "";
-	char *buf, *ptr, *next, *colon;
+	char *buf, *cmd, *ptr, *next, *colon;
+	char commands[512] = { 0 };
+	char cmdbuf[128] = { 0 };
 	char group;
-	char commands[512];
-	char cmdbuf[100];
-	char *cmd;
-	bool addstar, did;
+	bool addstar;
 	int i;
 
 	buf = (char *)malloc(strlen(api_groups) + 1);
@@ -731,7 +730,7 @@ static void setup_groups()
 			if (strcmp(ptr, "*") == 0)
 				addstar = true;
 			else {
-				did = false;
+				bool did = false;
 				for (i = 0; cmds[i].name != NULL; i++) {
 					if (strcasecmp(ptr, cmds[i].name) == 0) {
 						did = true;
@@ -1001,7 +1000,7 @@ static void mcast()
 	snprintf(expect_code, expect_code_len + 1, "%s%s-", expect, opt_api_mcast_code);
 
 	count = 0;
-	while (80085) {
+	while (42) {
 		sleep(1);
 
 		count++;
@@ -1044,14 +1043,12 @@ static void mcast()
 				snprintf(replybuf, sizeof(replybuf),
 					"ccm-%s-%d-%s", opt_api_mcast_code, opt_api_port, opt_api_mcast_des);
 
-				rep = sendto(reply_sock, replybuf, strlen(replybuf) + 1,
-					0, (struct sockaddr *)(&came_from),
-					sizeof(came_from));
+				rep = sendto(reply_sock, replybuf, (int) strlen(replybuf) + 1,
+					0, (struct sockaddr *)(&came_from), (int) sizeof(came_from));
 				if (SOCKETFAIL(rep)) {
 					applog(LOG_DEBUG, "API mcast send reply failed (%s) (%d)",
 						strerror(errno), (int)reply_sock);
-				}
-				else {
+				} else {
 					applog(LOG_DEBUG, "API mcast send reply (%s) succeeded (%d) (%d)",
 						replybuf, (int)rep, (int)reply_sock);
 				}
@@ -1064,7 +1061,6 @@ static void mcast()
 	}
 
 die:
-
 	CLOSESOCKET(mcast_sock);
 }
 
@@ -1120,7 +1116,9 @@ static void api()
 		return;
 	}
 
+#ifndef WIN32
 	setup_groups();
+#endif
 
 	if (opt_api_allow) {
 		setup_ipaccess();
