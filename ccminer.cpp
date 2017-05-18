@@ -324,7 +324,8 @@ Options:\n\
       --cpu-affinity    set process affinity to cpu core(s), mask 0x3 for cores 0 and 1\n\
       --cpu-priority    set process priority (default: 3) 0 idle, 2 normal to 5 highest\n\
   -b, --api-bind=port   IP:port for the miner API (default: 127.0.0.1:4068), 0 disabled\n\
-      --api-remote      Allow remote control, like pool switching\n\
+      --api-remote      Allow remote control, like pool switching, imply --api-allow=0/0\n\
+      --api-allow=...   IP/mask of the allowed api client(s), 0/0 for all\n\
       --max-temp=N      Only mine if gpu temp is less than specified value\n\
       --max-rate=N[KMG] Only mine if net hashrate is less than specified value\n\
       --max-diff=N      Only mine if net difficulty is less than specified value\n\
@@ -3005,6 +3006,7 @@ void parse_arg(int key, char *arg)
 		}
 		break;
 	case 1030: /* --api-remote */
+		free(opt_api_allow);
 		opt_api_allow = strdup("0/0");
 		break;
 	case 1031: /* --api-allow */

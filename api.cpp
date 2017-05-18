@@ -83,7 +83,7 @@ static struct IP4ACCESS *ipaccess = NULL;
 #define SOCK_REC_BUFSZ 1024
 #define QUEUE          10
 
-//#define ALLIP4         "0.0.0.0"
+#define ALLIP4         "0.0.0.0"
 static const char *localaddr = "127.0.0.1";
 static const char *UNAVAILABLE = " - API will not be available";
 static const char *MUNAVAILABLE = " - API multicast listener will not be available";
@@ -1212,13 +1212,9 @@ static void api()
 	}
 
 	if (opt_api_allow)
-		applog(LOG_WARNING, "API running in IP access mode on port %d (%d)", port, (int)*apisock);
-	else {
-		if (strcmp(opt_api_bind, "127.0.0.1"))
-			applog(LOG_WARNING, "API running in UNRESTRICTED read access mode on port %d (%d)", port, (int)*apisock);
-		else
-			applog(LOG_WARNING, "API running in local read access mode on port %d (%d)", port, (int)*apisock);
-	}
+		applog(LOG_WARNING, "API open in full access mode to %s", opt_api_allow);
+	else if (strcmp(opt_api_bind, "127.0.0.1") != 0)
+		applog(LOG_INFO, "API open to the network in read-only mode");
 
 	if (opt_api_mcast)
 		mcast_init();
