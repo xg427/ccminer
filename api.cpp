@@ -503,8 +503,10 @@ static char *gethelp(char *params)
 {
 	*buffer = '\0';
 	char * p = buffer;
-	for (int i = 0; i < CMDMAX-1; i++)
-		p += sprintf(p, "%s\n", cmds[i].name);
+	for (int i = 0; i < CMDMAX-1; i++) {
+		bool displayed = !cmds[i].iswritemode || opt_api_allow;
+		if (displayed) p += sprintf(p, "%s\n", cmds[i].name);
+	}
 	sprintf(p, "|");
 	return buffer;
 }
@@ -680,7 +682,7 @@ static void setup_groups()
 	bool addstar;
 	int i;
 
-	buf = (char *)malloc(strlen(api_groups) + 1);
+	buf = (char *)calloc(1, strlen(api_groups) + 1);
 	if (unlikely(!buf))
 		proper_exit(1); //, "Failed to malloc ipgroups buf");
 
@@ -731,7 +733,7 @@ static void setup_groups()
 				addstar = true;
 			else {
 				bool did = false;
-				for (i = 0; cmds[i].name != NULL; i++) {
+				for (i = 0; i < CMDMAX-1; i++) {
 					if (strcasecmp(ptr, cmds[i].name) == 0) {
 						did = true;
 						break;
@@ -756,7 +758,7 @@ static void setup_groups()
 
 		// * = allow all non-iswritemode commands
 		if (addstar) {
-			for (i = 0; cmds[i].name != NULL; i++) {
+			for (i = 0; i < CMDMAX-1; i++) {
 				if (cmds[i].iswritemode == false) {
 					// skip duplicates
 					sprintf(cmdbuf, "|%s|", cmds[i].name);
@@ -770,7 +772,7 @@ static void setup_groups()
 			}
 		}
 
-		ptr = apigroups[GROUPOFFSET(group)].commands = (char *)malloc(strlen(commands) + 1);
+		ptr = apigroups[GROUPOFFSET(group)].commands = (char *)calloc(1, strlen(commands) + 1);
 		if (unlikely(!ptr))
 			proper_exit(1); //, "Failed to malloc group commands buf");
 
@@ -781,7 +783,7 @@ static void setup_groups()
 	cmd = &(commands[0]);
 	*(cmd++) = '|';
 	*cmd = '\0';
-	for (i = 0; cmds[i].name != NULL; i++) {
+	for (i = 0; i < CMDMAX-1; i++) {
 		if (cmds[i].iswritemode == false) {
 			strcpy(cmd, cmds[i].name);
 			cmd += strlen(cmds[i].name);
@@ -790,7 +792,7 @@ static void setup_groups()
 		}
 	}
 
-	ptr = apigroups[GROUPOFFSET(NOPRIVGROUP)].commands = (char *)malloc(strlen(commands) + 1);
+	ptr = apigroups[GROUPOFFSET(NOPRIVGROUP)].commands = (char *)calloc(1, strlen(commands) + 1);
 	if (unlikely(!ptr))
 		proper_exit(1); //, "Failed to malloc noprivgroup commands buf");
 
@@ -856,7 +858,7 @@ static void setup_ipaccess()
 
 		ipaccess[ips].group = group;
 
-		if (strcmp(ptr, ALLIPS) == 0)
+		if (strcmp(ptr, ALLIPS) == 0 || strcmp(ptr, ALLIP4) == 0)
 			ipaccess[ips].ip = ipaccess[ips].mask = 0;
 		else
 		{
@@ -919,6 +921,8 @@ static bool check_connect(struct sockaddr_in *cli, char **connectaddr, char *gro
 			}
 		}
 	}
+	else if (strcmp(opt_api_bind, ALLIP4) == 0)
+		addrok = true;
 	else
 		addrok = (strcmp(*connectaddr, localaddr) == 0);
 
@@ -994,7 +998,7 @@ static void mcast()
 	}
 
 	expect_code_len = sizeof(expect) + strlen(opt_api_mcast_code);
-	expect_code = (char *)malloc(expect_code_len + 1);
+	expect_code = (char *)calloc(1, expect_code_len + 1);
 	if (!expect_code)
 		proper_exit(1); //, "Failed to malloc mcast expect_code");
 	snprintf(expect_code, expect_code_len + 1, "%s%s-", expect, opt_api_mcast_code);
@@ -1015,8 +1019,9 @@ static void mcast()
 		addrok = check_connect(&came_from, &connectaddr, &group);
 		applog(LOG_DEBUG, "API mcast from %s - %s",
 			connectaddr, addrok ? "Accepted" : "Ignored");
-		if (!addrok)
+		if (!addrok) {
 			continue;
+		}
 
 		buf[rep] = '\0';
 		if (rep > 0 && buf[rep - 1] == '\n')
@@ -1116,9 +1121,7 @@ static void api()
 		return;
 	}
 
-#ifndef WIN32
 	setup_groups();
-#endif
 
 	if (opt_api_allow) {
 		setup_ipaccess();
@@ -1210,9 +1213,9 @@ static void api()
 	}
 
 	if (opt_api_allow)
-		applog(LOG_WARNING, "API open in full access mode to %s", opt_api_allow);
+		applog(LOG_WARNING, "API open in full access mode to %s on port %d", opt_api_allow, opt_api_port);
 	else if (strcmp(opt_api_bind, "127.0.0.1") != 0)
-		applog(LOG_INFO, "API open to the network in read-only mode");
+		applog(LOG_INFO, "API open to the network in read-only mode on port %d", opt_api_port);
 
 	if (opt_api_mcast)
 		mcast_init();
@@ -1238,7 +1241,9 @@ static void api()
 			applog(LOG_DEBUG, "API: connection from %s - %s",
 				connectaddr, addrok ? "Accepted" : "Ignored");
 
-		if (addrok) {
+		if (!addrok) {
+			CLOSESOCKET(c);
+		} else {
 			bool fail;
 			char *wskey = NULL;
 			n = recv(c, &buf[0], SOCK_REC_BUFSZ, 0);
