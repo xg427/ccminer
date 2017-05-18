@@ -1212,7 +1212,9 @@ static void api()
 		return;
 	}
 
-	if (opt_api_allow)
+	if (opt_api_allow && strcmp(opt_api_bind, "127.0.0.1") == 0)
+		applog(LOG_WARNING, "API open locally in full access mode on port %d", opt_api_port);
+	else if (opt_api_allow)
 		applog(LOG_WARNING, "API open in full access mode to %s on port %d", opt_api_allow, opt_api_port);
 	else if (strcmp(opt_api_bind, "127.0.0.1") != 0)
 		applog(LOG_INFO, "API open to the network in read-only mode on port %d", opt_api_port);
@@ -1241,9 +1243,7 @@ static void api()
 			applog(LOG_DEBUG, "API: connection from %s - %s",
 				connectaddr, addrok ? "Accepted" : "Ignored");
 
-		if (!addrok) {
-			CLOSESOCKET(c);
-		} else {
+		if (addrok) {
 			bool fail;
 			char *wskey = NULL;
 			n = recv(c, &buf[0], SOCK_REC_BUFSZ, 0);
@@ -1308,8 +1308,8 @@ static void api()
 						break;
 					}
 				}
-				CLOSESOCKET(c);
 			}
+			CLOSESOCKET(c);
 		}
 	}
 
