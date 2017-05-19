@@ -3710,8 +3710,8 @@ int main(int argc, char *argv[])
 #endif
 			CUDART_VERSION/1000, (CUDART_VERSION % 1000)/10, arch);
 		printf("  Originally based on Christian Buchner and Christian H. project\n");
-		printf("  Include some algos from alexis78, djm34, sp, tsiv and klausT.\n\n");
-		printf("BTC donation address: 1AJdfCpLWPNoAMDfHF1wD5y8VgKSSTHxPo (tpruvot)\n\n");
+		printf("  Include some algos from alexis78, djm34, sp, tsiv, klausT and tpruvot.\n\n");
+		printf("BTC donation address: 14wvfyAmrzKsDFwjghvSAPdtDQP68o9Z6w (xg427)\n\n");
 	}
 
 	rpc_user = strdup("");
